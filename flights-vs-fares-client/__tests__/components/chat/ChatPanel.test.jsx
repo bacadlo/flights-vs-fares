@@ -6,6 +6,11 @@ jest.mock('next/navigation', () => ({
   useSearchParams: jest.fn(() => ({ get: () => null })),
 }));
 
+function mockSearchParams(params) {
+  const { useSearchParams } = require('next/navigation');
+  useSearchParams.mockReturnValue({ get: (key) => params[key] ?? null });
+}
+
 describe('ChatPanel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -131,10 +136,7 @@ describe('ChatPanel', () => {
 
   describe('auto-submit from URL params', () => {
     it('submits automatically when search params are present', async () => {
-      const { useSearchParams } = require('next/navigation');
-      useSearchParams.mockReturnValue({
-        get: (key) => ({ from: 'NYC', to: 'LAX', dates: 'Apr 14' })[key] ?? null,
-      });
+      mockSearchParams({ from: 'NYC', to: 'LAX', dates: 'Apr 14' });
 
       global.fetch.mockResolvedValueOnce({
         ok: true,
@@ -154,10 +156,7 @@ describe('ChatPanel', () => {
     });
 
     it('builds a from-only query when only from is provided', async () => {
-      const { useSearchParams } = require('next/navigation');
-      useSearchParams.mockReturnValue({
-        get: (key) => ({ from: 'Boston' })[key] ?? null,
-      });
+      mockSearchParams({ from: 'Boston' });
       global.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ reply: 'ok' }),
@@ -174,10 +173,7 @@ describe('ChatPanel', () => {
     });
 
     it('includes passenger count when more than 1', async () => {
-      const { useSearchParams } = require('next/navigation');
-      useSearchParams.mockReturnValue({
-        get: (key) => ({ from: 'NYC', to: 'LAX', passengers: '3' })[key] ?? null,
-      });
+      mockSearchParams({ from: 'NYC', to: 'LAX', passengers: '3' });
       global.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ reply: 'ok' }),
@@ -194,10 +190,7 @@ describe('ChatPanel', () => {
     });
 
     it('omits passenger count when passengers is 1', async () => {
-      const { useSearchParams } = require('next/navigation');
-      useSearchParams.mockReturnValue({
-        get: (key) => ({ from: 'NYC', to: 'LAX', passengers: '1' })[key] ?? null,
-      });
+      mockSearchParams({ from: 'NYC', to: 'LAX', passengers: '1' });
       global.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ reply: 'ok' }),
