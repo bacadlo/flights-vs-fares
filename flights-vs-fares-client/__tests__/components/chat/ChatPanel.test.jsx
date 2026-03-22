@@ -152,5 +152,92 @@ describe('ChatPanel', () => {
         )
       );
     });
+
+    it('builds a from-only query when only from is provided', async () => {
+      const { useSearchParams } = require('next/navigation');
+      useSearchParams.mockReturnValue({
+        get: (key) => ({ from: 'Boston' })[key] ?? null,
+      });
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ reply: 'ok' }),
+      });
+
+      render(<ChatPanel />);
+
+      await waitFor(() =>
+        expect(global.fetch).toHaveBeenCalledWith(
+          '/api/chat',
+          expect.objectContaining({ body: expect.stringContaining('from Boston') })
+        )
+      );
+    });
+
+    it('includes passenger count when more than 1', async () => {
+      const { useSearchParams } = require('next/navigation');
+      useSearchParams.mockReturnValue({
+        get: (key) => ({ from: 'NYC', to: 'LAX', passengers: '3' })[key] ?? null,
+      });
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ reply: 'ok' }),
+      });
+
+      render(<ChatPanel />);
+
+      await waitFor(() =>
+        expect(global.fetch).toHaveBeenCalledWith(
+          '/api/chat',
+          expect.objectContaining({ body: expect.stringContaining('3 passengers') })
+        )
+      );
+    });
+
+    it('omits passenger count when passengers is 1', async () => {
+      const { useSearchParams } = require('next/navigation');
+      useSearchParams.mockReturnValue({
+        get: (key) => ({ from: 'NYC', to: 'LAX', passengers: '1' })[key] ?? null,
+      });
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ reply: 'ok' }),
+      });
+
+      render(<ChatPanel />);
+
+      await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body.message).not.toContain('passengers');
+    });
+  });
+
+  describe('MessageContent', () => {
+    it('renders **bold** markers as <strong> elements', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ reply: '**Budget check:** looks good' }),
+      });
+
+      render(<ChatPanel />);
+      await userEvent.type(screen.getByPlaceholderText(/Describe your trip/i), 'test');
+      await userEvent.click(screen.getByRole('button', { name: /Send/i }));
+
+      await waitFor(() => expect(screen.getByText('Budget check:')).toBeInTheDocument());
+      expect(screen.getByText('Budget check:').tagName).toBe('STRONG');
+    });
+
+    it('renders plain text outside bold markers unchanged', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ reply: '**Best window:** book early' }),
+      });
+
+      render(<ChatPanel />);
+      await userEvent.type(screen.getByPlaceholderText(/Describe your trip/i), 'test');
+      await userEvent.click(screen.getByRole('button', { name: /Send/i }));
+
+      await waitFor(() => expect(screen.getByText(/book early/)).toBeInTheDocument());
+      expect(screen.getByText(/book early/).tagName).not.toBe('STRONG');
+    });
   });
 });
