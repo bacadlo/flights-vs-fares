@@ -24,3 +24,7 @@ vendor/
 
 # Air (live reload)
 tmp/
+
+# Prisma
+node_modules/
+generated/
